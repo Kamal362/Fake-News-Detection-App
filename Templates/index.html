@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>WordLens | Fake News Detector</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='style.css') }}"
+    />
+    <script>
+      function showLoading() {
+        document.getElementById("loading").style.display = "block";
+        setTimeout(() => {
+          document.getElementById("loading").style.display = "none";
+        }, 20000); // 20 seconds
+      }
+    </script>
+  </head>
+  <body>
+    <div class="container">
+      <h1>WordLens</h1>
+      <p>Detect Fake News with Confidence</p>
+      <form action="/predict" method="POST" onsubmit="showLoading()">
+        <textarea
+          name="news"
+          placeholder="Paste a news article or snippet..."
+          required
+        >
+{{ news or '' }}</textarea
+        >
+        <div class="button-group">
+          <button type="submit">Analyze</button>
+          <a href="{{ url_for('home') }}" class="btn-home">Home</a>
+        </div>
+      </form>
+
+      <div id="loading" class="loading" style="display: none">
+        <p>Analyzing...</p>
+        <div class="spinner"></div>
+      </div>
+
+      {% if prediction_text %}
+      <div class="result">
+        <h2>Result: {{ prediction_text }}</h2>
+        <div class="confidence-bar">
+          <div
+            class="confidence-level"
+            style="width: {{ confidence * 100 }}%;"
+          ></div>
+        </div>
+        <p><strong>Confidence:</strong> {{ (confidence * 100)|int }}%</p>
+        <p><strong>Possible Sources:</strong> {{ sources | join(', ') }}</p>
+        <p><strong>Analyzed News:</strong> {{ news }}</p>
+      </div>
+      {% endif %}
+    </div>
+  </body>
+</html>
