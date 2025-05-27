@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request
 import pickle
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder='templates')
 
 # Load model and vectorizer
 try:
@@ -23,9 +23,9 @@ def predict():
         prediction = model.predict(vect_text)[0]
         confidence = max(model.predict_proba(vect_text)[0])  # Get the confidence level
         sources = ["Source A", "Source B", "Source C"]  # Example sources
-        
+        #print(f'Received news: {news}')
         label = "Fake News" if prediction == 1 else "Real News"
-        return render_template('index.html', prediction_text=label, confidence=confidence, sources=sources)
+        return render_template('index.html', prediction_text=label, confidence=confidence, sources=sources, news = news)
     except Exception as e:
         print(f"Error during prediction: {e}")
         return render_template('index.html', prediction_text="Error in prediction")
