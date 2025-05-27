@@ -25,9 +25,7 @@
           name="news"
           placeholder="Paste a news article or snippet..."
           required
-        >
-{{ news or '' }}</textarea
-        >
+        >{{ news | default('') }}</textarea>
         <div class="button-group">
           <button type="submit">Analyze</button>
           <a href="{{ url_for('home') }}" class="btn-home">Home</a>
@@ -45,12 +43,12 @@
         <div class="confidence-bar">
           <div
             class="confidence-level"
-            style="width: {{ confidence * 100 }}%;"
+            style="width: {{ (confidence | default(0)) * 100 }}%;"
           ></div>
         </div>
-        <p><strong>Confidence:</strong> {{ (confidence * 100)|int }}%</p>
-        <p><strong>Possible Sources:</strong> {{ sources | join(', ') }}</p>
-        <p><strong>Analyzed News:</strong> {{ news }}</p>
+        <p><strong>Confidence:</strong> {{ (confidence | default(0) * 100) | int }}%</p>
+        <p><strong>Possible Sources:</strong> {{ sources | default([]) | join(', ') }}</p>
+        <p><strong>Analyzed News:</strong> {{ news | default('') }}</p>
       </div>
       {% endif %}
     </div>
