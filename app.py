@@ -26,19 +26,18 @@ def load_ml_components():
         with open(MODEL_PATH, 'rb') as model_file, open(VECTORIZER_PATH, 'rb') as vectorizer_file:
             model = pickle.load(model_file)
             vectorizer = pickle.load(vectorizer_file)
-            print("ML components loaded successfully")
+            print("✅ ML components loaded successfully")
             return True
             
     except Exception as e:
-        print(f"Error loading ML components: {str(e)}")
+        print(f"❌ Error loading ML components: {str(e)}")
         model = None
         vectorizer = None
         return False
 
-@app.before_first_request
-def initialize_app():
-    """Initialize the app before first request."""
-    print("Initializing application...")
+# Initialize app components at startup
+with app.app_context():
+    print("⚙️ Initializing application...")
     if not TEMPLATE_DIR.exists():
         os.makedirs(TEMPLATE_DIR, exist_ok=True)
     load_ml_components()
@@ -50,7 +49,7 @@ def home():
     
     if not template_path.exists():
         error_msg = f"Template not found at: {template_path}"
-        print(f"{error_msg}")
+        print(f"❌ {error_msg}")
         return error_msg, 500
         
     return render_template('index.html')
@@ -61,7 +60,7 @@ def predict():
     # Check if ML components are loaded
     if model is None or vectorizer is None:
         error_msg = "ML service not initialized"
-        print(f"{error_msg}")
+        print(f"❌ {error_msg}")
         return jsonify({
             'error': error_msg,
             'status': 'service_unavailable'
@@ -71,7 +70,7 @@ def predict():
     news_text = request.form.get('news', '').strip()
     if not news_text:
         error_msg = "No text provided for analysis"
-        print(f"{error_msg}")
+        print(f"❌ {error_msg}")
         return jsonify({
             'error': error_msg,
             'status': 'bad_request'
@@ -96,12 +95,12 @@ def predict():
             'status': 'success'
         }
         
-        print(f"Prediction successful: {result['prediction']} ({result['confidence']})")
+        print(f"✅ Prediction successful: {result['prediction']} ({result['confidence']})")
         return jsonify(result)
         
     except Exception as e:
         error_msg = f"Prediction error: {str(e)}"
-        print(f"{error_msg}")
+        print(f"❌ {error_msg}")
         return jsonify({
             'error': error_msg,
             'status': 'prediction_failed'
