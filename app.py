@@ -1,73 +1,62 @@
+import os
 from flask import Flask, render_template, request
 import pickle
-import os
-from typing import Tuple, Dict, Any
+from pathlib import Path
 
 app = Flask(__name__)
 
-# Constants
-MODEL_PATH = "model.pkl"
-VECTORIZER_PATH = "vectorizer.pkl"
+# Configure absolute paths
+BASE_DIR = Path(__file__).parent
+TEMPLATE_DIR = BASE_DIR / "templates"
 
-def load_ml_components() -> Tuple[Any, Any]:
-    """Load machine learning model and vectorizer."""
+def load_ml_components():
     try:
-        with open(MODEL_PATH, "rb") as model_file, open(VECTORIZER_PATH, "rb") as vectorizer_file:
-            model = pickle.load(model_file)
-            vectorizer = pickle.load(vectorizer_file)
-            print("ML components loaded successfully")
-            return model, vectorizer
+        with open(BASE_DIR / "model.pkl", "rb") as f:
+            model = pickle.load(f)
+        with open(BASE_DIR / "vectorizer.pkl", "rb") as f:
+            vectorizer = pickle.load(f)
+        print("ML components loaded successfully")
+        return model, vectorizer
     except Exception as e:
         print(f"Error loading ML components: {e}")
-        raise
+        return None, None
 
-# Load components at startup
-try:
-    model, vectorizer = load_ml_components()
-except Exception as e:
-    print(f"Failed to initialize ML components: {e}")
-    model, vectorizer = None, None
+model, vectorizer = load_ml_components()
 
-@app.route('/', methods=['GET', 'HEAD'])
+@app.route('/', methods=['GET'])
 def home():
-    """Handle both regular GET and HEAD health checks."""
-    if request.method == 'HEAD':
-        return '', 200  # Empty response for health checks
-    return render_template('index.html')
+    # Verify template exists
+    if not (TEMPLATE_DIR / "index.html").exists():
+        return "Template missing: Please ensure index.html exists in templates folder", 500
+    
+    try:
+        return render_template('index.html')
+    except Exception as e:
+        print(f"Template rendering error: {e}")
+        return f"Error rendering template: {str(e)}", 500
 
 @app.route('/predict', methods=['POST'])
 def predict():
-    """Handle prediction requests."""
-    if model is None or vectorizer is None:
-        return render_template('index.html', 
-                            prediction_text="Service unavailable", 
-                            error="ML model not loaded")
-
+    if not all([model, vectorizer]):
+        return "ML service unavailable", 503
+        
     try:
-        news_text = request.form.get('news', '')
-        if not news_text.strip():
-            return render_template('index.html', 
-                                prediction_text="Invalid input", 
-                                error="Empty news text provided")
-
-        vect_text = vectorizer.transform([news_text])
+        news = request.form.get('news', '')
+        if not news.strip():
+            return "No text provided", 400
+            
+        vect_text = vectorizer.transform([news])
         prediction = model.predict(vect_text)[0]
         confidence = max(model.predict_proba(vect_text)[0])
         
-        result = {
-            "prediction": "Fake News" if prediction == 1 else "Real News",
-            "confidence": f"{confidence:.2%}",
-            "sources": ["Source A", "Source B", "Source C"],
-            "input_text": news_text
-        }
-        
-        return render_template('index.html', **result)
-        
+        return render_template('index.html',
+                            prediction="Fake" if prediction else "Real",
+                            confidence=f"{confidence:.1%}",
+                            sources=["Source A", "Source B", "Source C"])
     except Exception as e:
         print(f"Prediction error: {e}")
-        return render_template('index.html', 
-                            prediction_text="Prediction error",
-                            error=str(e))
+        return f"Prediction failed: {str(e)}", 500
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=False)
